@@ -12,6 +12,7 @@ import java.sql.SQLException;
 public class Basesita {
 
     public static void main(String[] args) {
+        System.out.println("Holis");
         
         try (Connection conexion = Conexion.conectar()) {
 
