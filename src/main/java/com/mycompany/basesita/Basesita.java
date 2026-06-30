@@ -1,32 +1,16 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
-
 package com.mycompany.basesita;
-import java.sql.Connection;
-import java.sql.SQLException;
-/**
- *
- * @author Mento
- */
+
+import javax.swing.SwingUtilities;
+
 public class Basesita {
 
     public static void main(String[] args) {
-        System.out.println("Holis");
+        System.out.println("Iniciando la aplicación...");
         
-        try (Connection conexion = Conexion.conectar()) {
-
-            if (conexion != null) {
-                System.out.println("La base de datos está disponible");
-                // Ejecuta un ejemplo de consulta sobre la base sakila
-                ExampleQuery.ejecutarEjemplo();
-                //System.out.println("\n--- Prueba de inserción ---\n");
-                //ExampleQuery.insertarEjemplo();
-            }
-            
-        } catch (SQLException e) {
-            System.out.println("Error al cerrar la conexión");
-            System.out.println(e.getMessage());
-        }
+        // Es una buena práctica arrancar las interfaces gráficas en su propio hilo
+        SwingUtilities.invokeLater(() -> {
+            VentanaAlumnos ventana = new VentanaAlumnos();
+            ventana.setVisible(true);
+        });
     }
 }

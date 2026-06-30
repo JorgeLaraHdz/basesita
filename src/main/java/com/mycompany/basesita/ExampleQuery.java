@@ -4,31 +4,52 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.ResultSetMetaData;
+import javax.swing.table.DefaultTableModel;
 
 public class ExampleQuery {
 
-    public static void ejecutarEjemplo() {
-        try (Connection conexion = Conexion.conectar()) {
+    // Método para obtener los datos y prepararlos para el JTable
+    public static DefaultTableModel obtenerModeloAlumnos() {
+        // Creamos el modelo de la tabla que la interfaz gráfica va a consumir
+        DefaultTableModel modelo = new DefaultTableModel();
 
+        try (Connection conexion = Conexion.conectar()) {
             if (conexion == null) {
                 System.out.println("No se pudo establecer la conexión para la consulta");
-                return;
+                return modelo;
             }
 
-            String sql = "SELECT actor_id, first_name, last_name FROM actor LIMIT 10";
+            // Usamos tu consulta SQL para traer Alumnos y Grupos
+            String sql = "SELECT a.matricula AS 'Matrícula', "
+                       + "CONCAT(a.nombre, ' ', a.apellido_paterno, ' ', IFNULL(a.apellido_materno, '')) AS 'Alumno', "
+                       + "g.nombre AS 'Grupo', "
+                       + "g.turno AS 'Turno', "
+                       + "i.ciclo_escolar AS 'Ciclo' "
+                       + "FROM inscripciones i "
+                       + "INNER JOIN alumnos a ON i.id_alumno = a.id_alumno "
+                       + "INNER JOIN grupos g ON i.id_grupo = g.id_grupo;";
 
             try (PreparedStatement ps = conexion.prepareStatement(sql);
                  ResultSet rs = ps.executeQuery()) {
 
-                System.out.println("Resultados de la consulta de ejemplo (tabla actor):");
-                
-                while (rs.next()) {
-                    int id = rs.getInt("actor_id");
-                    String nombre = rs.getString("first_name");
-                    String apellido = rs.getString("last_name");
-                    System.out.printf("%d: %s %s%n", id, nombre, apellido);
+                // Extraemos los metadatos para saber cuántas y cuáles columnas hay
+                ResultSetMetaData rsMd = rs.getMetaData();
+                int cantidadColumnas = rsMd.getColumnCount();
+
+                // 1. Llenamos los encabezados de la tabla
+                for (int i = 1; i <= cantidadColumnas; i++) {
+                    modelo.addColumn(rsMd.getColumnLabel(i));
                 }
-                
+
+                // 2. Llenamos las filas con los datos
+                while (rs.next()) {
+                    Object[] fila = new Object[cantidadColumnas];
+                    for (int i = 0; i < cantidadColumnas; i++) {
+                        fila[i] = rs.getObject(i + 1);
+                    }
+                    modelo.addRow(fila);
+                }
 
             } catch (SQLException e) {
                 System.out.println("Error al ejecutar la consulta: " + e.getMessage());
@@ -37,37 +58,7 @@ public class ExampleQuery {
         } catch (SQLException e) {
             System.out.println("Error al cerrar la conexión: " + e.getMessage());
         }
-    }
-    
-    public static void insertarEjemplo() {
-        try (Connection conexion = Conexion.conectar()) {
 
-            if (conexion == null) {
-                System.out.println("No se pudo establecer la conexión para la inserción");
-                return;
-            }
-
-            String sql = "INSERT INTO actor (first_name, last_name) VALUES (?, ?)";
-
-            try (PreparedStatement ps = conexion.prepareStatement(sql)) {
-
-                ps.setString(1, "Juan");
-                ps.setString(2, "Pérez");
-
-                int filasInsertadas = ps.executeUpdate();
-
-                if (filasInsertadas > 0) {
-                    System.out.println("Inserción exitosa: " + filasInsertadas + " fila(s) insertada(s)");
-                } else {
-                    System.out.println("No se insertó ninguna fila");
-                }
-
-            } catch (SQLException e) {
-                System.out.println("Error al insertar: " + e.getMessage());
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Error al cerrar la conexión: " + e.getMessage());
-        }
+        return modelo;
     }
 }
